@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "priority": "High",
+    "text": "Schedule Follow-up Call",
+    "completed": false,
+    "category": "Communication"
+  },
+  {
+    "id": 2,
+    "priority": "High", 
+    "text": "Verify Card Activation",
+    "completed": false,
+    "category": "Verification"
+  },
+  {
+    "id": 3,
+    "priority": "Medium",
+    "text": "Verify Employment Status",
+    "completed": false,
+    "category": "Verification"
+  },
+  {
+    "id": 4,
+    "priority": "Low",
+    "text": "Verify Correct Phone Number",
+    "completed": false,
+    "category": "Verification"
+  },
+  {
+    "id": 5,
+    "priority": "Medium",
+    "text": "Update Credit Card Limit",
+    "completed": false,
+    "category": "Account Management"
+  },
+  {
+    "id": 6,
+    "priority": "Low",
+    "text": "Send Confirmation Email",
+    "completed": false,
+    "category": "Communication"
+  },
+  {
+    "id": 7,
+    "priority": "High",
+    "text": "Process Address Change Request",
+    "completed": false,
+    "category": "Account Management"
+  },
+  {
+    "id": 8,
+    "priority": "Medium",
+    "text": "Review Risk Profile",
+    "completed": false,
+    "category": "Compliance"
+  }
+]

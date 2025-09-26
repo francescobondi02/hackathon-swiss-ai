@@ -1,16 +1,22 @@
-# Random Number App
+# Client Dashboard App
 
-A minimal example: a Python FastAPI backend returns a random number, and a React frontend displays it when you click a button.
+A comprehensive client management dashboard with draggable action items, client insights with approval workflow, and conversation transcripts with AI summary generation.
 
 ## Project Structure
 
 ```
 /Users/franc/hackathon-swiss-ai/
 ├── backend/
-│   ├── main.py                # FastAPI app with /api/random
+│   ├── main.py                # FastAPI app with /api/random and /api/generate-summary
 │   └── requirements.txt       # Backend dependencies
-└── frontend/
-    └── index.html             # React CDN page with button
+├── frontend/
+│   └── index.html             # Static demo (optional)
+└── frontend-react/            # React (Vite) dashboard app
+    ├── public/
+    │   └── action-items.json  # Sample action items data
+    └── src/
+        ├── App.jsx            # Main dashboard component
+        └── App.css            # Dashboard styles
 ```
 
 ## Prerequisites
@@ -42,7 +48,25 @@ npm install
 npm run dev
 ```
 
-Open the URL shown (typically `http://127.0.0.1:5173/`). Click the button; it fetches from `http://127.0.0.1:8000/api/random` and displays the number.
+Open the URL shown (typically `http://127.0.0.1:5173/`). You'll see a comprehensive client dashboard with:
+
+## Features
+
+### Action Items (Left Column)
+- **Draggable items** loaded from `action-items.json`
+- **Priority-based color coding** (High=Red, Medium=Orange, Low=Green)
+- **Drag & drop deletion** with confirmation modal
+- **Real-time count** of remaining items
+
+### Client Insights (Middle Column)
+- **Editable fields** for client information
+- **Approval/rejection buttons** for new values
+- **Pre-filled sample data** (e.g., Credit Card Limit: 1000 CHF/day)
+
+### Conversation Transcripts (Right Column)
+- **Expandable transcripts** with German conversation sample
+- **Generate Summary button** that calls `/api/generate-summary`
+- **Previous conversation history** with existing summaries
 
 ## Notes
 
