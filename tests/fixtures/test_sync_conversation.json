@@ -1,0 +1,49 @@
+{
+  "conversation_metadata": {
+    "conversation_id": "call_transcript_3",
+    "language": "German",
+    "date": "2024-08-20",
+    "duration": "00:10:00",
+    "participants": {
+      "advisor": "Klaus",
+      "client": "Marco Ferrari"
+    }
+  },
+  "authentication": {
+    "identity_verification": {
+      "date_of_birth": "21/05/1991",
+      "address": "Bahnhofstrasse 50, 8001 Zürich",
+      "other_details": "Moved to Zurich office"
+    }
+  },
+  "interaction_context": {
+    "contact_preferences": {
+      "preferred_channel": "email",
+      "email": "marco.ferrari.zurich@email.com",
+      "phone_number": "+41 44 888 99 00"
+    },
+    "meeting_arrangements": {
+      "next_meeting": [
+        {
+          "date": "2024-09-05",
+          "time": "11:00",
+          "type": "branch",
+          "purpose": "Review investment strategy after relocation"
+        }
+      ],
+      "follow_up_required": "yes"
+    }
+  },
+  "financial_information": {
+    "investment_preferences": {
+      "risk_profile": "moderate",
+      "products_discussed": ["swiss funds", "real estate"],
+      "goals": ["property investment", "swiss market exposure"]
+    }
+  },
+  "client_sentiment": {
+    "expressed_emotions": ["excited", "confident"],
+    "confidence_level": "very high",
+    "trust_in_bank": "very high"
+  }
+}

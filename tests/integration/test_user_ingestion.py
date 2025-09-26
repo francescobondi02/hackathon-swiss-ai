@@ -18,44 +18,90 @@ DB_CONFIG = {
 
 
 def create_minimal_user():
-    """Crea un utente con informazioni minime"""
+    """Crea/aggiorna un utente e inserisce i dati immutabili in user_static"""
     conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
 
-    # Inserisci utente base
+    # --- Dati "users" (mutabili) ---
     user_data = {
         "email": "marco.ferrari@email.com",
-        "name": "Marco Ferrari",  # Nome nei metadata
+        "postal_address": "Via Finta 12, 20100 Milano",
+        "phone_number": "+39 02 555 00 00",
+        "name": "Marco Ferrari",
         "role": "client",
         "segment": "unknown",
         "created_source": "manual_test",
     }
 
+    # --- Dati "user_static" (immutabili) ---
+    # ⚠️ Una volta inseriti, non saranno aggiornabili (trigger di immutabilità)
+    user_static_data = {
+        "first_name": "Marco",
+        "last_name": "Ferrari",
+        "birth_date": "1991-05-21",  # YYYY-MM-DD
+        "birth_place": "Milano",
+        "nationality": "IT",
+        "tax_id": "IT-MRCRRI91E21F205X",
+    }
+
+    # Upsert "users" con merge dei metadata e riempimento address/phone se mancanti
     cursor.execute(
         """
-        INSERT INTO users (email, metadata, created_at)
-        VALUES (%(email)s, %(metadata)s, NOW())
-        ON CONFLICT (email) DO UPDATE SET metadata = %(metadata)s
+        INSERT INTO users (email, postal_address, phone_number, metadata, created_at)
+        VALUES (%(email)s, %(postal_address)s, %(phone_number)s, %(metadata)s, NOW())
+        ON CONFLICT (email) DO UPDATE
+        SET
+          metadata = COALESCE(users.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+          postal_address = COALESCE(users.postal_address, EXCLUDED.postal_address),
+          phone_number  = COALESCE(users.phone_number,  EXCLUDED.phone_number)
         RETURNING user_id, email
-    """,
+        """,
         {
             "email": user_data["email"],
+            "postal_address": user_data["postal_address"],
+            "phone_number": user_data["phone_number"],
             "metadata": json.dumps(
-                {k: v for k, v in user_data.items() if k != "email"}
+                {
+                    "name": user_data["name"],
+                    "role": user_data["role"],
+                    "segment": user_data["segment"],
+                    "created_source": user_data["created_source"],
+                }
             ),
         },
     )
-
     user_id, email = cursor.fetchone()
+
+    # Inserisci "user_static" SOLO se non esiste già (immutabile)
+    cursor.execute(
+        """
+        INSERT INTO user_static (
+            user_id, first_name, last_name, birth_date, birth_place, nationality, tax_id
+        )
+        VALUES (%(user_id)s, %(first_name)s, %(last_name)s, %(birth_date)s,
+                %(birth_place)s, %(nationality)s, %(tax_id)s)
+        ON CONFLICT (user_id) DO NOTHING
+        """,
+        {
+            "user_id": user_id,
+            "first_name": user_static_data["first_name"],
+            "last_name": user_static_data["last_name"],
+            "birth_date": user_static_data["birth_date"],
+            "birth_place": user_static_data["birth_place"],
+            "nationality": user_static_data.get("nationality"),
+            "tax_id": user_static_data.get("tax_id"),
+        },
+    )
 
     conn.commit()
     cursor.close()
     conn.close()
 
-    print(f"✅ Utente creato/aggiornato:")
+    print("✅ Utente creato/aggiornato:")
     print(f"   📧 Email: {email}")
     print(f"   🆔 User ID: {user_id}")
-    print(f"   👤 Nome: {user_data['name']}")
+    print(f"   👤 Nome (metadata): {user_data['name']}")
+    print("   🧾 Anagrafica immutabile: inserita se non presente")
 
     return user_id, email
 

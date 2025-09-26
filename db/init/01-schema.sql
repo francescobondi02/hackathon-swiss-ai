@@ -19,6 +19,8 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TABLE IF NOT EXISTS users (
   user_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email      CITEXT NOT NULL,
+  postal_address TEXT NOT NULL,
+  phone_number TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   metadata   JSONB
 );

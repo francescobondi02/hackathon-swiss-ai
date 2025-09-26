@@ -28,7 +28,7 @@ def create_prompt(transcription_content):
     """Crea un prompt personalizzato attorno al contenuto della trascrizione."""
 
     # Carica il template JSON
-    with open("template.json", "r", encoding="utf-8") as f:
+    with open("prompts/template.json", "r", encoding="utf-8") as f:
         template = json.load(f)
 
     prompt = f"""You are a helpful assistant that has to analyze the following phone call transcription between a customer and a bank operator.
@@ -50,8 +50,6 @@ Additional constraints:
 
 duration must always be filled with a reasonable estimated call length, inferred from the transcript.
 
-If date in conversation_metadata is not explicitly mentioned, insert a date 3 weeks before the scheduled next meeting date (if available).
-
 The field next_meeting in meeting_arrangements must be:
 
 Filled with the scheduled meeting date and time if one was agreed during the call.
@@ -71,7 +69,7 @@ def create_summary_prompt(transcription_content):
     """Crea un prompt per generare il riepilogo della trascrizione."""
 
     # Carica il template JSON
-    with open("summary.json", "r", encoding="utf-8") as g:
+    with open("prompts/summary.json", "r", encoding="utf-8") as g:
         template = json.load(g)
 
     prompt = f"""You are analyzing a transcript of a call between a client and a bank advisor.
@@ -94,7 +92,8 @@ Transcript:
 def main():
     try:
         # Seleziona un file txt casuale
-        txt_file = get_random_txt_file(TRAIN_FOLDER)
+        # txt_file = get_random_txt_file(TRAIN_FOLDER)
+        txt_file = Path("example/example.txt")
         print(f"File selezionato: {txt_file}")
 
         # Leggi il contenuto del file
@@ -119,7 +118,7 @@ def main():
         print("-" * 50)
 
         # Also save the response to a file
-        output_file = "gemini_output.json"
+        output_file = "results/gemini_output.json"
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(response.text)
         print(f"Risposta salvata in {output_file}")
@@ -131,7 +130,7 @@ def main():
 
         # Chiama Gemini
         summary_response = client.models.generate_content(
-            model="gemini-1.5-flash", contents=summary_prompt
+            model="gemini-2.5-flash", contents=summary_prompt
         )
 
         print("\nRiepilogo di Gemini:")
@@ -140,7 +139,7 @@ def main():
         print("-" * 50)
 
         # Salva il riepilogo in un altro file
-        summary_output_file = "gemini_summary_output.json"
+        summary_output_file = "results/gemini_summary_output.json"
         with open(summary_output_file, "w", encoding="utf-8") as f:
             f.write(summary_response.text)
         print(f"Riepilogo salvato in {summary_output_file}")

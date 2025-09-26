@@ -1,22 +1,55 @@
-# Hackathon Swiss AI - Call Transcript Analysis System
+# Customer Intelligence System
 
-## 🎯 Overview
+A sophisticated event-sourcing system for building comprehensive customer profiles from conversation data.
 
-Complete AI-powered system for analyzing bank call transcripts, extracting customer insights, and building dynamic user profiles. The system processes call transcripts using Google Gemini AI, stores structured data in PostgreSQL, and provides a FastAPI backend for integration.
+## 🚀 Features
 
-## 🏗️ System Architecture
+- **Event-sourcing Architecture**: Complete historical tracking of all customer interactions
+- **Multi-method User Authentication**: Identifies users by email, phone, address, name, and date-of-birth with intelligent fuzzy matching
+- **Automated Fact Extraction**: Extracts structured facts from conversation JSON data
+- **Profile Evolution**: Tracks how customer profiles change over time
+- **Table Synchronization**: Maintains consistency between operational tables and profile facts
+- **Comprehensive Testing**: Integration and unit tests with realistic test fixtures
+
+## 🏗️ Architecture
 
 ```
-📞 Call Transcript → 🧠 Gemini AI Analysis → 📊 JSON Structure → 🗄️ Database Storage → 👤 User Profile Updates
+src/
+├── ingestion/          # Core ingestion pipeline
+│   ├── ingest_from_json.py    # Main ingestion script
+│   └── ingest_payload.py      # Payload processing utilities
+├── analysis/           # Data analysis modules
+│   └── analyse_json.py        # JSON data analysis
+└── utils/              # Utility functions
+
+tests/
+├── integration/        # End-to-end testing
+│   ├── test_ingestion_system.py    # Full system tests
+│   └── test_user_ingestion.py      # User creation tests
+├── unit/              # Unit tests
+├── fixtures/          # Test data
+│   ├── test_auth_methods.json      # Authentication test data
+│   ├── test_sync_conversation.json # Profile sync test data
+│   └── test_update_conversation.json # Profile update test data
+└── data/              # Test datasets
 ```
 
-### Components:
+## 🗄️ Database Schema
 
-- **FastAPI Backend**: RESTful API for transcript processing
-- **Google Gemini Integration**: AI-powered transcript analysis
-- **PostgreSQL Database**: Event-sourcing architecture for user knowledge tracking
-- **Docker Infrastructure**: Containerized database with pgAdmin interface
-- **Comprehensive Testing**: Full system validation and reactivity demonstration
+### Core Tables
+
+- **users**: Primary user information (email, phone, address)
+- **calls**: Call metadata and transcripts
+- **user_fact_events**: Event-sourced fact changes with full history
+- **user_profile_current**: Optimized current state of user profiles
+
+### Event Sourcing
+
+All profile changes are tracked in `user_fact_events` with:
+
+- Complete audit trail
+- Temporal queries
+- Profile reconstruction at any point in time
 
 ## 🚀 Quick Start
 

@@ -1,0 +1,57 @@
+{
+  "conversation_metadata": {
+    "conversation_id": "call_transcript_2",
+    "language": "English",
+    "date": "2024-06-15",
+    "duration": "00:12:00",
+    "participants": {
+      "advisor": "Sarah",
+      "client": "Marco Ferrari"
+    }
+  },
+  "authentication": {
+    "identity_verification": {
+      "date_of_birth": "21/05/1991",
+      "address": "Via Monte Brè 25, 6900 Lugano",
+      "other_details": "Updated address verification"
+    }
+  },
+  "interaction_context": {
+    "contact_preferences": {
+      "preferred_channel": "phone",
+      "email": "marco.ferrari@email.com",
+      "phone_number": "+41 91 123 45 67"
+    },
+    "meeting_arrangements": {
+      "next_meeting": [
+        {
+          "date": "2024-07-20",
+          "time": "15:30",
+          "type": "video",
+          "purpose": "Follow-up on portfolio performance and risk adjustment"
+        }
+      ],
+      "follow_up_required": "yes"
+    }
+  },
+  "financial_information": {
+    "investment_preferences": {
+      "risk_profile": "aggressive",
+      "products_discussed": ["equity funds", "emerging markets"],
+      "goals": ["wealth growth", "early retirement"]
+    }
+  },
+  "client_sentiment": {
+    "expressed_emotions": ["satisfied", "optimistic"],
+    "confidence_level": "very high",
+    "trust_in_bank": "high"
+  },
+  "compliance_and_regulatory": {
+    "kyc_updates": {
+      "employment_status": "Senior Software Engineer",
+      "source_of_funds": "salary + bonuses",
+      "total_assets_reported": "6250000 CUR2",
+      "purpose_of_relationship": "wealth management"
+    }
+  }
+}
