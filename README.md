@@ -1,110 +1,81 @@
-# Fullstack Connection Test
+# Client Dashboard App
 
-A simple fullstack application with React frontend and Node.js Express backend to test connectivity between frontend and backend services.
+A comprehensive client management dashboard with draggable action items, client insights with approval workflow, and conversation transcripts with AI summary generation.
+
 
 ## Project Structure
 
 ```
-├── frontend/          # React application (Vite)
-├── backend/           # Node.js Express API
-├── package.json       # Root package.json for scripts
-└── README.md
+/Users/franc/hackathon-swiss-ai/
+├── backend/
+│   ├── main.py                # FastAPI app with /api/random and /api/generate-summary
+│   └── requirements.txt       # Backend dependencies
+├── frontend/
+│   └── index.html             # Static demo (optional)
+└── frontend-react/            # React (Vite) dashboard app
+    ├── public/
+    │   └── action-items.json  # Sample action items data
+    └── src/
+        ├── App.jsx            # Main dashboard component
+        └── App.css            # Dashboard styles
 ```
 
-## Quick Start
+## Prerequisites
 
-### Quick Start (Both servers)
+- Python 3.11+
+- macOS Terminal (zsh) or similar
+
+## Backend: FastAPI
+
+Create and activate a virtual environment, then run the API server.
+
 ```bash
-npm run start:both
-### Manual Setup
-npm run install-all
-1. **Install all dependencies:**
-# Run both frontend and backend together
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### Option 2: Run Servers Separately
-2. **Start backend server:**
-**Terminal 1 - Backend:**
+- Test in a browser: `http://127.0.0.1:8000/api/random` should return `{ "value": <number> }`.
+
+## Frontend: React (Vite)
+
+Start the React dev server in the `frontend-react/` app:
+
 ```bash
-   npm run dev
-python run.py
-```
-3. **Start frontend server (in new terminal):**
-**Terminal 2 - Frontend:**
-   cd frontend
-   npm run dev
+cd frontend-react
+npm install
 npm run dev
 ```
-## API Endpoints
-- **Health Check**: http://localhost:5000/api/health
-- `GET /api/health` - Health check endpoint
-- `GET /api/test-connection` - Connection test endpoint
+
+Open the URL shown (typically `http://127.0.0.1:5173/`). You'll see a comprehensive client dashboard with:
 
 ## Features
 
-### Frontend (React)
-- Connection status indicator
-- Real-time connection testing
-- Error handling and troubleshooting tips
-- Responsive design
-- Visual feedback for connection states
+### Action Items (Left Column)
+- **Draggable items** loaded from `action-items.json`
+- **Priority-based color coding** (High=Red, Medium=Orange, Low=Green)
+- **Drag & drop deletion** with confirmation modal
+- **Real-time count** of remaining items
 
-### Backend (Python Flask)
-- RESTful API endpoints
-- CORS enabled for cross-origin requests
-- Health check endpoint
-- Connection test endpoint
-- Environment variable support
+### Client Insights (Middle Column)
+- **Editable fields** for client information
+- **Approval/rejection buttons** for new values
+- **Pre-filled sample data** (e.g., Credit Card Limit: 1000 CHF/day)
 
-## API Endpoints
+### Conversation Transcripts (Right Column)
+- **Expandable transcripts** with German conversation sample
+- **Generate Summary button** that calls `/api/generate-summary`
+- **Previous conversation history** with existing summaries
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Basic health check |
-| GET | `/api/test-connection` | Connection test with detailed info |
+## Notes
 
-## Testing the Connection
+- CORS is enabled on the backend for development convenience.
+- If your browser blocks direct `file://` fetches, serve the frontend with a simple server:
 
-1. Start both servers
-2. Open http://localhost:5173 in your browser
-3. The page will automatically test the connection
-4. Click "Test Connection" to manually test again
-5. Check the connection status and backend response data
-
-## Troubleshooting
-
-### Backend Issues
-- Ensure Python 3.7+ is installed
-- Check if port 5000 is available
-- Verify requirements.txt dependencies are installed
-
-### Frontend Issues
-- Ensure Node.js 16+ is installed
-- Check if port 5173 is available
-- Verify npm dependencies are installed
-
-### CORS Issues
-- Backend has CORS enabled by default
-- If issues persist, check browser console for errors
-
-## Development
-
-### Adding New API Endpoints
-
-1. Add new routes in `backend/app.py`
-2. Update frontend to call new endpoints
-3. Test the connection
-
-### Environment Variables
-
-Backend supports `.env` file in the `backend/` directory:
-```
-PORT=5000
-FLASK_ENV=development
+```bash
+python -m http.server 5173 --directory frontend
 ```
 
-## Technologies Used
-
-- **Frontend**: React, Vite, CSS3
-- **Backend**: Python, Flask, Flask-CORS
-- **Development**: Concurrently for running both servers
+If you prefer a static HTML demo, `frontend/index.html` is still available.
