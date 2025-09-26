@@ -1,0 +1,189 @@
+[
+  {
+    "task_type": "info.account.balance.get",
+    "parameters": {
+      "account_id": "",
+      "currency": "CHF",
+      "as_of_date": "2025-09-26"
+    }
+  },
+  {
+    "task_type": "info.card.balance.get",
+    "parameters": {
+      "card_last4": "",
+      "currency": "CHF",
+      "as_of_date": "2025-09-26"
+    }
+  },
+  {
+    "task_type": "info.account.transactions.list",
+    "parameters": {
+      "account_id": "",
+      "date_from": "2025-09-01",
+      "date_to": "2025-09-26",
+      "limit": 10
+    }
+  },
+  {
+    "task_type": "info.fees.explanation.get",
+    "parameters": {
+      "account_id": "",
+      "transaction_id": "",
+      "fee_code": "",
+      "notes": ""
+    }
+  },
+  {
+    "task_type": "info.products.overview.get",
+    "parameters": {
+      "category": "mortgage",
+      "language": "it"
+    }
+  },
+  {
+    "task_type": "info.branch.hours.get",
+    "parameters": {
+      "branch_id": "",
+      "city": ""
+    }
+  },
+  {
+    "task_type": "card.block.request",
+    "parameters": {
+      "card_last4": "",
+      "reason": "lost",
+      "effective_now": true
+    }
+  },
+  {
+    "task_type": "card.replacement.request",
+    "parameters": {
+      "card_last4": "",
+      "delivery_address_id": "",
+      "pickup_branch_id": ""
+    }
+  },
+  {
+    "task_type": "card.limit.update",
+    "parameters": {
+      "card_last4": "",
+      "new_limit_amount": 5000,
+      "currency": "CHF",
+      "temporary_days": 7
+    }
+  },
+  {
+    "task_type": "payments.transfer.create",
+    "parameters": {
+      "from_account_id": "",
+      "to_iban": "",
+      "amount": 1000.0,
+      "currency": "CHF",
+      "description": "Bonifico test"
+    }
+  },
+  {
+    "task_type": "services.toggle",
+    "parameters": {
+      "service_name": "sms_alerts",
+      "action": "enable"
+    }
+  },
+  {
+    "task_type": "tech.access.recover_credentials",
+    "parameters": {
+      "channel": "sms",
+      "username": ""
+    }
+  },
+  {
+    "task_type": "tech.app.login_support",
+    "parameters": {
+      "device_type": "iOS",
+      "os": "17.0",
+      "error_code": "AUTH123",
+      "notes": "problema di login"
+    }
+  },
+  {
+    "task_type": "tech.esign.help",
+    "parameters": {
+      "document_id": "",
+      "issue": "firma non disponibile"
+    }
+  },
+  {
+    "task_type": "complaint.charge.dispute.open",
+    "parameters": {
+      "transaction_id": "",
+      "amount": 0.0,
+      "currency": "CHF",
+      "reason": "non_recognized",
+      "evidence_urls": []
+    }
+  },
+  {
+    "task_type": "complaint.service.issue.open",
+    "parameters": {
+      "topic": "card_declines",
+      "description": "La carta viene rifiutata spesso",
+      "desired_outcome": "risoluzione definitiva"
+    }
+  },
+  {
+    "task_type": "case.status.inquiry",
+    "parameters": {
+      "case_id": ""
+    }
+  },
+  {
+    "task_type": "contact.address.update",
+    "parameters": {
+      "street": "",
+      "postal_code": "",
+      "city": "",
+      "country": "CH"
+    }
+  },
+  {
+    "task_type": "contact.email_phone.update",
+    "parameters": {
+      "email": "",
+      "phone_mobile": "",
+      "phone_home": ""
+    }
+  },
+  {
+    "task_type": "contact.preferences.communication.update",
+    "parameters": {
+      "primary_channel": "email",
+      "statements_by_email": true,
+      "marketing_opt_in": false
+    }
+  },
+  {
+    "task_type": "appointment.schedule",
+    "parameters": {
+      "date": "2025-10-03",
+      "time": "14:30",
+      "channel": "branch",
+      "topic": "apertura conto",
+      "duration_minutes": 45
+    }
+  },
+  {
+    "task_type": "appointment.reschedule",
+    "parameters": {
+      "appointment_id": "",
+      "new_date": "2025-10-10",
+      "new_time": "15:00"
+    }
+  },
+  {
+    "task_type": "appointment.cancel",
+    "parameters": {
+      "appointment_id": "",
+      "reason": "cliente impossibilitato"
+    }
+  }
+]
