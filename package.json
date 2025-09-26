@@ -3,16 +3,13 @@
   "version": "1.0.0",
   "description": "Frontend and Backend connection test",
   "scripts": {
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend-dev\"",
     "build": "cd frontend && npm run build",
     "backend": "cd backend && npm run dev",
-    "start:both": "concurrently \"npm run backend\" \"npm run dev\""
-    "backend": "cd backend && python run.py",
-    "install-all": "cd frontend && npm install",
+    "frontend-dev": "cd frontend && npm run dev",
+    "start:both": "concurrently \"npm run backend\" \"npm run frontend-dev\"",
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
     "test-connection": "curl http://localhost:5000/api/health"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
