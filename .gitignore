@@ -2,3 +2,9 @@
 
 # Data folder
 data/
+
+__pycache__
+
+gemini_output*.json
+
+test_call_marco.json

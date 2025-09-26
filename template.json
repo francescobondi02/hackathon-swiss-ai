@@ -2,7 +2,8 @@
   "conversation_metadata": {
     "conversation_id": "<unique_id_or_filename>",
     "language": "<detected_language>",
-    "date": "<date_if_available>",
+    "date": "<date>",
+    "duration": "<hh:mm:ss>",
     "participants": {
       "advisor": "<advisor_name_or_placeholder>",
       "client": "<client_name_or_placeholder>"
@@ -22,10 +23,10 @@
       "phone_number": "<phone_placeholder>"
     },
     "meeting_arrangements": {
-      "scheduled_meetings": [
+      "next_meeting": [
         {
-          "date": "<meeting_date>",
-          "time": "<meeting_time>",
+          "date": "<meeting_date/available_dates>",
+          "time": "<meeting_time/available_hours>",
           "type": "<video/branch/phone>",
           "purpose": "<meeting_purpose>"
         }

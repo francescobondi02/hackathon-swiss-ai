@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: hackathon_postgres
+    environment:
+      POSTGRES_USER: hackathon_user
+      POSTGRES_PASSWORD: hackathon_pass
+      POSTGRES_DB: hackathon_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - hackathon_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hackathon_user -d hackathon_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer:latest
+    container_name: hackathon_adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - hackathon_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  hackathon_network:
+    driver: bridge

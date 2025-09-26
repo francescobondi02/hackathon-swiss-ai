@@ -38,10 +38,25 @@ TRANSCRIPTION:
 
 Your mission is to extract the most relevant and important information from this bank call transcription and structure it according to the JSON template provided below. Fill in the placeholders with actual information from the call, or leave them as placeholders if the information is not available.
 
-Please be careful to the following points:
-1. Customer problems or requests
-2. Solutions proposed by the operator and tasks to be done
-3. Any follow-up actions needed
+Be careful with the following points:
+
+Customer problems or requests
+
+Solutions proposed by the operator and tasks to be done
+
+Any follow-up actions needed
+
+Additional constraints:
+
+duration must always be filled with a reasonable estimated call length, inferred from the transcript.
+
+If date in conversation_metadata is not explicitly mentioned, insert a date 3 weeks before the scheduled next meeting date (if available).
+
+The field next_meeting in meeting_arrangements must be:
+
+Filled with the scheduled meeting date and time if one was agreed during the call.
+
+Otherwise, filled with the dates/times when the client is available for future contact.
 
 Follow this JSON structure exactly:
 
@@ -49,6 +64,30 @@ Follow this JSON structure exactly:
 
 Return only valid JSON following this structure. Use English for any text fields. If some information is not available, leave null."""
 
+    return prompt
+
+
+def create_summary_prompt(transcription_content):
+    """Crea un prompt per generare il riepilogo della trascrizione."""
+
+    # Carica il template JSON
+    with open("summary.json", "r", encoding="utf-8") as g:
+        template = json.load(g)
+
+    prompt = f"""You are analyzing a transcript of a call between a client and a bank advisor.
+Instructions:
+Write a concise summary of the call.
+The summary must not exceed 4 sentences or 200 characters (whichever comes first).
+The summary should capture the most important points: client’s request, advisor’s response, and any next steps.
+Output the result only as a JSON object in the format below. Use ENglish. Do not include any text outside the JSON.
+JSON Output Format:
+{{
+"call_summary": "..."
+}}
+
+Transcript:
+{transcription_content}
+"""
     return prompt
 
 
@@ -84,6 +123,28 @@ def main():
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(response.text)
         print(f"Risposta salvata in {output_file}")
+
+        # Crea il secondo prompt per il riepilogo
+        summary_prompt = create_summary_prompt(transcription)
+
+        print("\nChiamando Gemini per il riepilogo...")
+
+        # Chiama Gemini
+        summary_response = client.models.generate_content(
+            model="gemini-1.5-flash", contents=summary_prompt
+        )
+
+        print("\nRiepilogo di Gemini:")
+        print("-" * 50)
+        print(summary_response.text)
+        print("-" * 50)
+
+        # Salva il riepilogo in un altro file
+        summary_output_file = "gemini_summary_output.json"
+        with open(summary_output_file, "w", encoding="utf-8") as f:
+            f.write(summary_response.text)
+        print(f"Riepilogo salvato in {summary_output_file}")
+
     except Exception as e:
         print(f"Errore: {e}")
 
