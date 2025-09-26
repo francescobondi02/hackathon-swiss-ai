@@ -2,6 +2,7 @@
 
 A comprehensive client management dashboard with draggable action items, client insights with approval workflow, and conversation transcripts with AI summary generation.
 
+
 ## Project Structure
 
 ```
