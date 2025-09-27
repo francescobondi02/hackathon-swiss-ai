@@ -1023,6 +1023,56 @@ async def get_user_by_name(name: str):
         )
 
 
+@app.get("/latest-payload/{name}")
+async def get_latest_payload(name: str):
+    """Get the latest call payload for a user by name"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Find user_id by name (searches in name, email, phone, address)
+        cursor.execute(
+            """
+            SELECT payload
+            FROM call_payload
+            WHERE call_id IN (
+                SELECT c.call_id
+                FROM calls c
+                JOIN users u ON c.user_id = u.user_id
+                LEFT JOIN user_static us ON u.user_id = us.user_id
+                WHERE LOWER(u.email) LIKE LOWER(%s) 
+                   OR LOWER(u.metadata ->> 'name') LIKE LOWER(%s)
+                   OR LOWER(u.phone_number) LIKE LOWER(%s)
+                   OR LOWER(u.postal_address) LIKE LOWER(%s)
+                   OR LOWER(CONCAT(us.first_name, ' ', us.last_name)) LIKE LOWER(%s)
+                   OR LOWER(us.first_name) LIKE LOWER(%s)
+                   OR LOWER(us.last_name) LIKE LOWER(%s)
+                ORDER BY c.created_at DESC
+                LIMIT 1
+            )
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (name, name, name, name, name, name, name),
+        )
+        user_data = cursor.fetchone()
+
+        if not user_data:
+            cursor.close()
+            conn.close()
+            raise HTTPException(
+                status_code=404, detail=f"User with name '{name}' not found"
+            )
+        user_id = user_data["user_id"]
+        logger.info(f"Found user_id {user_id} for name '{name}'")
+        return user_data
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like 404)
+    except Exception as e:
+        logger.error(f"Failed to get user_id for '{name}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get user_id: {str(e)}")
+
+
 # Development server
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

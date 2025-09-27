@@ -134,7 +134,11 @@ function App() {
       }
       try {
         const uData = await ApiService.getUserByName("Markus");
+        const lastPayload = await ApiService.getLatestPayload("Markus");
         console.log("👤 Fetched user data:", uData);
+        console.log("📄 Fetched latest payload:", lastPayload);
+
+        setNewInsightUpdates(lastPayload);
 
         if (uData) {
           // Here I prepare them for every scenario

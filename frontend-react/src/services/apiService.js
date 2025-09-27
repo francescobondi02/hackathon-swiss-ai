@@ -44,6 +44,12 @@ class ApiService {
       method: "GET",
     });
   }
+
+  static async getLatestPayload(name) {
+    return this.fetchWithErrorHandling(`/latest-payload/${name}`, {
+      method: "GET",
+    });
+  }
 }
 
 export default ApiService;
