@@ -150,3 +150,5 @@ docker-compose.override.yml
 *.7z
 
 .venv
+
+frontend-react/.vite/

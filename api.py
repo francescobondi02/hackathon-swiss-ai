@@ -447,123 +447,10 @@ Return only valid JSON following this structure. Use English for any text fields
 
     except ImportError:
         logger.warning("Google GenAI library not available, using mock response")
-        return call_gemini_api_mock(transcript, caller_info)
+        return None
     except Exception as e:
         logger.error(f"Error calling Gemini API: {e}")
-        return call_gemini_api_mock(transcript, caller_info)
-
-
-def call_gemini_api_mock(transcript: str, caller_info: Dict = None) -> Dict:
-    """
-    Mock Gemini API call for transcript analysis using template structure
-    """
-    # Load the JSON template to create realistic mock response
-    try:
-        template_path = Path(__file__).parent / "prompts" / "template.json"
-        with open(template_path, "r", encoding="utf-8") as f:
-            template = json.load(f)
-    except Exception:
-        template = {}
-
-    # Create mock response following the template structure
-    timestamp = datetime.now()
-    mock_response = {
-        "conversation_metadata": {
-            "conversation_id": f"mock_call_{timestamp.strftime('%Y%m%d_%H%M%S')}",
-            "language": "en",
-            "date": timestamp.isoformat(),
-            "duration": "5:30",
-            "participants": {
-                "advisor": "AI Assistant",
-                "client": (
-                    caller_info.get("name", "Customer") if caller_info else "Customer"
-                ),
-            },
-        },
-        "authentication": {
-            "identity_verification": {
-                "date_of_birth": caller_info.get("dob") if caller_info else None,
-                "address": caller_info.get("address") if caller_info else None,
-                "other_details": "Verified via phone",
-            }
-        },
-        "interaction_context": {
-            "contact_preferences": {
-                "preferred_channel": "phone",
-                "email": caller_info.get("email") if caller_info else None,
-                "phone_number": caller_info.get("phone") if caller_info else None,
-            },
-            "meeting_arrangements": {"next_meeting": [], "follow_up_required": "no"},
-        },
-        "client_requests": [
-            {
-                "topic": "account_inquiry",
-                "description": "General account information request",
-                "urgency": "low",
-                "documents_provided": [],
-                "documents_requested": [],
-            }
-        ],
-        "advisor_responses": [
-            {
-                "assurance_or_explanation": "Account information provided",
-                "proposed_solution": "Information delivered as requested",
-                "timeline": "immediate",
-            }
-        ],
-        "action_items": [],
-        "financial_information": {
-            "accounts": {
-                "balances": None,
-                "overdraft_limit": None,
-                "credit_card_limit": None,
-                "recent_transactions": [],
-            },
-            "assets": {
-                "real_estate": None,
-                "liquid_assets": None,
-                "other_assets": None,
-                "inheritance": "no",
-            },
-            "investment_preferences": {
-                "risk_profile": None,
-                "products_discussed": [],
-                "goals": [],
-            },
-        },
-        "client_sentiment": {
-            "expressed_emotions": ["neutral"],
-            "confidence_level": "medium",
-            "trust_in_bank": "stable",
-        },
-        "feedback_and_suggestions": {
-            "client_feedback": "neutral",
-            "suggestions_for_services": [],
-        },
-        "compliance_and_regulatory": {
-            "kyc_updates": {
-                "employment_status": None,
-                "source_of_funds": None,
-                "total_assets_reported": None,
-                "purpose_of_relationship": None,
-            },
-            "security_concerns": {"fraud_suspicions": "no", "measures_discussed": []},
-        },
-    }
-
-    # Save mock response with timestamp
-    timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
-    output_file = (
-        Path(__file__).parent / "results" / f"gemini_output_mock_{timestamp_str}.json"
-    )
-    output_file.parent.mkdir(exist_ok=True)
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(mock_response, f, indent=2, ensure_ascii=False)
-
-    logger.info(f"Mock Gemini response saved to {output_file}")
-
-    return mock_response
+        return None
 
 
 # Main function to call Gemini (tries real API first, falls back to mock)
@@ -576,7 +463,7 @@ def call_gemini_api(transcript: str, caller_info: Dict = None) -> Dict:
         return call_gemini_api_real(transcript, caller_info)
     except Exception as e:
         logger.warning(f"Real Gemini API failed, using mock: {e}")
-        return call_gemini_api_mock(transcript, caller_info)
+        return None
 
 
 # API Routes
@@ -1053,224 +940,87 @@ async def process_transcript_text(
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
-@app.get("/users", response_model=Dict)
-async def get_users():
-    """Get list of all users"""
+@app.get("/users/{name}")
+async def get_user_by_name(name: str):
+    """Get comprehensive user information by name (searches in name, email, phone, address)"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        cursor.execute(
-            "SELECT user_id, email, phone_number FROM users ORDER BY email LIMIT 50"
-        )
-        users = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        return {
-            "users": [dict(user) for user in users],
-            "count": len(users),
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to get users: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get users: {str(e)}")
-
-
-@app.get("/users/{user_id}/profile", response_model=UserProfile)
-async def get_user_profile(user_id: str):
-    """Get complete user profile with facts"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get user basic info - handle both UUID and string user_ids
-        cursor.execute(
-            "SELECT user_id, email, phone_number, postal_address, metadata FROM users WHERE user_id::text = %s",
-            (user_id,),
-        )
-        user_info = cursor.fetchone()
-
-        if not user_info:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # Get user profile facts
+        # Enhanced search across multiple fields with JOIN to user_static for names
         cursor.execute(
             """
-            SELECT fact_key, fact_value, last_observed_at 
-            FROM user_profile_current 
-            WHERE user_id = %s 
+            SELECT 
+                u.user_id, u.email, u.phone_number, u.postal_address, u.created_at, u.metadata,
+                us.first_name, us.last_name, us.birth_date, us.birth_place, us.nationality, us.tax_id
+            FROM users u
+            LEFT JOIN user_static us ON u.user_id = us.user_id
+            WHERE LOWER(u.email) LIKE LOWER(%s) 
+               OR LOWER(u.metadata ->> 'name') LIKE LOWER(%s)
+               OR LOWER(u.phone_number) LIKE LOWER(%s)
+               OR LOWER(u.postal_address) LIKE LOWER(%s)
+               OR LOWER(CONCAT(us.first_name, ' ', us.last_name)) LIKE LOWER(%s)
+               OR LOWER(us.first_name) LIKE LOWER(%s)
+               OR LOWER(us.last_name) LIKE LOWER(%s)
+            LIMIT 1
+            """,
+            (
+                f"%{name}%",
+                f"%{name}%",
+                f"%{name}%",
+                f"%{name}%",
+                f"%{name}%",
+                f"%{name}%",
+                f"%{name}%",
+            ),
+        )
+        user_data = cursor.fetchone()
+
+        if not user_data:
+            cursor.close()
+            conn.close()
+            raise HTTPException(
+                status_code=404, detail=f"User with name '{name}' not found"
+            )
+
+        # Get current profile facts
+        cursor.execute(
+            """
+            SELECT fact_key, fact_value
+            FROM user_fact_events 
+            WHERE user_id = %s
             ORDER BY fact_key
             """,
-            (user_id,),
+            (user_data["user_id"],),
         )
         profile_facts = cursor.fetchall()
 
-        # Get total events count
-        cursor.execute(
-            "SELECT COUNT(*), MAX(observed_at) FROM user_fact_events WHERE user_id = %s",
-            (user_id,),
-        )
-        event_stats = cursor.fetchone()
-
-        cursor.close()
-        conn.close()
-
-        return UserProfile(
-            user_id=user_info["user_id"],
-            email=user_info["email"],
-            phone=user_info["phone_number"],
-            address=user_info["postal_address"],
-            profile_facts=[
-                {
-                    "fact_key": fact["fact_key"],
-                    "fact_value": fact["fact_value"],
-                    "last_observed": fact["last_observed_at"],
-                }
-                for fact in profile_facts
-            ],
-            total_events=event_stats["count"] or 0,
-            last_updated=event_stats["max"],
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get user profile: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get user profile: {str(e)}"
-        )
-
-
-@app.get("/users", response_model=List[Dict])
-async def get_all_users():
-    """Get all users with basic info"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        cursor.execute(
-            """
-            SELECT 
-                u.user_id,
-                u.email,
-                u.phone_number,
-                u.postal_address,
-                COUNT(ufe.event_id) as total_events,
-                MAX(ufe.observed_at) as last_activity
-            FROM users u
-            LEFT JOIN user_fact_events ufe ON u.user_id = ufe.user_id
-            GROUP BY u.user_id, u.email, u.phone_number, u.postal_address
-            ORDER BY last_activity DESC NULLS LAST
-        """
-        )
-
-        users = cursor.fetchall()
-        cursor.close()
-        conn.close()
-
-        return [dict(user) for user in users]
-
-    except Exception as e:
-        logger.error(f"Failed to get users: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get users: {str(e)}")
-
-
-@app.get("/facts/search")
-async def search_facts(
-    user_id: Optional[str] = None, fact_key: Optional[str] = None, limit: int = 100
-):
-    """Search facts with optional filters"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        query = """
-            SELECT 
-                upc.user_id,
-                u.email,
-                upc.fact_key,
-                upc.fact_value,
-                upc.last_observed_at
-            FROM user_profile_current upc
-            JOIN users u ON upc.user_id = u.user_id
-            WHERE 1=1
-        """
-        params = []
-
-        if user_id:
-            query += " AND upc.user_id = %s"
-            params.append(user_id)
-
-        if fact_key:
-            query += " AND upc.fact_key ILIKE %s"
-            params.append(f"%{fact_key}%")
-
-        query += " ORDER BY upc.last_observed_at DESC LIMIT %s"
-        params.append(limit)
-
-        cursor.execute(query, params)
-        facts = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        return FactsResponse(
-            total_facts=len(facts), facts=[dict(fact) for fact in facts]
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to search facts: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to search facts: {str(e)}")
-
-
-@app.get("/stats")
-async def get_system_stats():
-    """Get system statistics"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get basic counts
-        cursor.execute("SELECT COUNT(*) as user_count FROM users")
-        user_count = cursor.fetchone()["user_count"]
-
-        cursor.execute("SELECT COUNT(*) as event_count FROM user_fact_events")
-        event_count = cursor.fetchone()["event_count"]
-
-        cursor.execute(
-            "SELECT COUNT(DISTINCT user_id) as profile_count FROM user_profile_current"
-        )
-        profile_count = cursor.fetchone()["profile_count"]
-
-        # Get recent activity
-        cursor.execute(
-            """
-            SELECT DATE(observed_at) as date, COUNT(*) as events
-            FROM user_fact_events 
-            WHERE observed_at > NOW() - INTERVAL '7 days'
-            GROUP BY DATE(observed_at)
-            ORDER BY date DESC
-            LIMIT 7
-        """
-        )
-        recent_activity = cursor.fetchall()
-
         cursor.close()
         conn.close()
 
         return {
-            "users": user_count,
-            "total_events": event_count,
-            "users_with_profiles": profile_count,
-            "recent_activity": [dict(activity) for activity in recent_activity],
-            "timestamp": datetime.now().isoformat(),
+            "user_id": user_data["user_id"],
+            "email": user_data["email"],
+            "phone_number": user_data["phone_number"],
+            "postal_address": user_data["postal_address"],
+            "first_name": user_data.get("first_name"),
+            "last_name": user_data.get("last_name"),
+            "birth_date": user_data.get("birth_date"),
+            "birth_place": user_data.get("birth_place"),
+            "tax_id": user_data.get("tax_id"),
+            "nationality": user_data.get("nationality"),
+            "created_at": user_data["created_at"],
+            "metadata": user_data["metadata"],
+            "profile_facts": [dict(fact) for fact in profile_facts],
         }
 
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like 404)
     except Exception as e:
-        logger.error(f"Failed to get stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+        logger.error(f"Failed to get user info for '{name}': {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get user info: {str(e)}"
+        )
 
 
 # Development server
