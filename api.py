@@ -297,6 +297,7 @@ class ProcessingResponse(BaseModel):
     success: bool
     message: str
     user_id: Optional[str] = None
+    call_id: Optional[str] = None
     facts_extracted: Optional[int] = None
     processing_time: Optional[float] = None
 
@@ -690,14 +691,74 @@ async def process_transcript(
 
         logger.info(f"Identified user_id: {user_id}")
 
-        # Step 3: Extract facts from Gemini response and UPDATE DATABASE
+        # Step 3: Extract facts from Gemini response
         facts = extract_facts(gemini_response)
 
-        # Step 4: Process facts and update user profile with DATABASE CONNECTION
-        if facts:
-            conn = get_db_connection()
-            cursor = conn.cursor()
+        # Step 4: Create call record and process facts in SINGLE TRANSACTION
+        call_id = None
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            # Create call record
+            language = gemini_response.get("conversation_metadata", {}).get(
+                "language", "Unknown"
+            )
+            channel = (
+                gemini_response.get("interaction_context", {})
+                .get("contact_preferences", {})
+                .get("preferred_channel", "phone")
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO calls (user_id, language, channel, created_at)
+                VALUES (%s, %s, %s, NOW())
+                RETURNING call_id
+                """,
+                (user_id, language, channel),
+            )
+            call_id = cursor.fetchone()[0]
+            logger.info(f"Created call record with call_id: {call_id}")
+
+            # Try optional inserts in separate savepoints
+            # Insert call transcript (if table exists)
+            cursor.execute("SAVEPOINT transcript_insert")
             try:
+                cursor.execute(
+                    """
+                    INSERT INTO call_transcript (call_id, transcript_text, created_at)
+                    VALUES (%s, %s, NOW())
+                    """,
+                    (call_id, transcript_data.transcript),
+                )
+                cursor.execute("RELEASE SAVEPOINT transcript_insert")
+                logger.info(f"Inserted transcript for call_id: {call_id}")
+            except Exception as transcript_error:
+                cursor.execute("ROLLBACK TO SAVEPOINT transcript_insert")
+                logger.warning(
+                    f"Could not insert transcript (table might not exist): {transcript_error}"
+                )
+
+            # Insert call payload (if table exists)
+            cursor.execute("SAVEPOINT payload_insert")
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO call_payload (call_id, payload, created_at)
+                    VALUES (%s, %s, NOW())
+                    """,
+                    (call_id, json.dumps(gemini_response)),
+                )
+                cursor.execute("RELEASE SAVEPOINT payload_insert")
+                logger.info(f"Inserted payload for call_id: {call_id}")
+            except Exception as payload_error:
+                cursor.execute("ROLLBACK TO SAVEPOINT payload_insert")
+                logger.warning(
+                    f"Could not insert payload (table might not exist): {payload_error}"
+                )
+
+            # Process facts and update user profile in SAME TRANSACTION
+            if facts:
                 # Insert facts into database
                 for fact_key, fact_value, fact_path, observed_at in facts:
                     # Convert fact_value to proper JSON format
@@ -706,40 +767,46 @@ async def process_transcript(
                     else:
                         json_value = json.dumps(fact_value)
 
-                    # Insert into user_fact_events (without json_path column)
+                    # Use NOW() for timestamp instead of potentially invalid observed_at
+                    # Insert into user_fact_events with call_id
                     cursor.execute(
                         """
-                        INSERT INTO user_fact_events (user_id, fact_key, fact_value, observed_at)
-                        VALUES (%s, %s, %s, COALESCE(%s, NOW()))
+                        INSERT INTO user_fact_events (user_id, call_id, fact_key, fact_value, observed_at)
+                        VALUES (%s, %s, %s, %s, NOW())
                         """,
-                        (user_id, fact_key, json_value, observed_at),
+                        (user_id, call_id, fact_key, json_value),
                     )
 
                     # Update user_profile_current
                     cursor.execute(
                         """
                         INSERT INTO user_profile_current (user_id, fact_key, fact_value, last_observed_at)
-                        VALUES (%s, %s, %s, COALESCE(%s, NOW()))
+                        VALUES (%s, %s, %s, NOW())
                         ON CONFLICT (user_id, fact_key) 
                         DO UPDATE SET 
                             fact_value = EXCLUDED.fact_value,
-                            last_observed_at = EXCLUDED.last_observed_at
+                            last_observed_at = NOW()
                         """,
-                        (user_id, fact_key, json_value, observed_at),
+                        (user_id, fact_key, json_value),
                     )
 
-                conn.commit()
                 logger.info(
-                    f"Successfully inserted {len(facts)} facts into database for user {user_id}"
+                    f"Successfully inserted {len(facts)} facts into database for user {user_id} (call_id: {call_id})"
                 )
 
-            except Exception as e:
-                conn.rollback()
-                logger.error(f"Error inserting facts: {e}")
-                raise e
-            finally:
-                cursor.close()
-                conn.close()
+            # Commit everything in one transaction
+            conn.commit()
+            logger.info(
+                f"Successfully created call records and facts for call_id: {call_id}"
+            )
+
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error in database operations: {e}")
+            raise e
+        finally:
+            cursor.close()
+            conn.close()
 
         # Step 5: Update user profile (run in background for better performance)
         background_tasks.add_task(refresh_user_profile, user_id)
@@ -755,6 +822,7 @@ async def process_transcript(
             success=True,
             message="Transcript processed successfully",
             user_id=user_id,
+            call_id=call_id,
             facts_extracted=len(facts),
             processing_time=processing_time,
         )
