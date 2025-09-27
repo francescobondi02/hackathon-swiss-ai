@@ -291,6 +291,12 @@ class CallTranscript(BaseModel):
     )
 
 
+class SimpleTranscript(BaseModel):
+    """Input model for simple transcript processing with just text"""
+
+    text: str = Field(..., description="The transcript text to process")
+
+
 class ProcessingResponse(BaseModel):
     """Response model for transcript processing"""
 
@@ -829,6 +835,221 @@ async def process_transcript(
 
     except Exception as e:
         logger.error(f"Transcript processing failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
+@app.post("/process-text", response_model=ProcessingResponse)
+async def process_transcript_text(
+    transcript_data: SimpleTranscript, background_tasks: BackgroundTasks
+):
+    """
+    Process transcript text directly without file reading
+    Similar to /process-transcript but accepts plain text input
+    """
+    start_time = datetime.now()
+
+    try:
+        logger.info(f"Processing text of length {len(transcript_data.text)} characters")
+
+        # Step 1: Call Gemini API with the provided text
+        gemini_response = call_gemini_api(transcript_data.text, {})
+
+        # Step 2: Extract customer info from Gemini response
+        customer_info = {}
+
+        logger.info(f"DEBUG: Gemini response keys: {list(gemini_response.keys())}")
+
+        # Get client name from conversation metadata
+        if (
+            "conversation_metadata" in gemini_response
+            and "participants" in gemini_response["conversation_metadata"]
+        ):
+            participants = gemini_response["conversation_metadata"]["participants"]
+            logger.info(f"DEBUG: Participants found: {participants}")
+            customer_info["name"] = participants.get("client")
+            logger.info(f"DEBUG: Extracted name: {customer_info.get('name')}")
+
+        # Get contact info from interaction context
+        if (
+            "interaction_context" in gemini_response
+            and "contact_preferences" in gemini_response["interaction_context"]
+        ):
+            contact_prefs = gemini_response["interaction_context"][
+                "contact_preferences"
+            ]
+            logger.info(f"DEBUG: Contact prefs found: {contact_prefs}")
+            customer_info["email"] = contact_prefs.get("email")
+            customer_info["phone"] = contact_prefs.get("phone_number")
+            logger.info(
+                f"DEBUG: Extracted email: {customer_info.get('email')}, phone: {customer_info.get('phone')}"
+            )
+
+        # Get identity info from authentication
+        if (
+            "authentication" in gemini_response
+            and "identity_verification" in gemini_response["authentication"]
+        ):
+            identity = gemini_response["authentication"]["identity_verification"]
+            logger.info(f"DEBUG: Identity verification found: {identity}")
+            customer_info["address"] = identity.get("address")
+            customer_info["dob"] = identity.get("date_of_birth")
+            customer_info["other_details"] = identity.get("other_details")
+            logger.info(
+                f"DEBUG: Extracted address: {customer_info.get('address')}, dob: {customer_info.get('dob')}"
+            )
+
+        logger.info(f"Final extracted customer info: {customer_info}")
+
+        # Check if we have valid customer info (ignore null values)
+        valid_customer_info = {
+            k: v for k, v in customer_info.items() if v is not None and v != ""
+        }
+
+        if not valid_customer_info:
+            logger.error("No valid customer information found in Gemini response")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot identify user: no valid customer information found in text",
+            )
+
+        logger.info(f"Valid customer info for identification: {valid_customer_info}")
+        user_id = identify_user_only(valid_customer_info)
+
+        logger.info(f"Identified user_id: {user_id}")
+
+        # Step 3: Extract facts from Gemini response
+        facts = extract_facts(gemini_response)
+
+        # Step 4: Create call record and process facts in SINGLE TRANSACTION
+        call_id = None
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            # Create call record
+            language = gemini_response.get("conversation_metadata", {}).get(
+                "language", "Unknown"
+            )
+            channel = (
+                gemini_response.get("interaction_context", {})
+                .get("contact_preferences", {})
+                .get("preferred_channel", "phone")
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO calls (user_id, language, channel, created_at)
+                VALUES (%s, %s, %s, NOW())
+                RETURNING call_id
+                """,
+                (user_id, language, channel),
+            )
+            call_id = cursor.fetchone()[0]
+            logger.info(f"Created call record with call_id: {call_id}")
+
+            # Try optional inserts in separate savepoints
+            # Insert call transcript
+            cursor.execute("SAVEPOINT transcript_insert")
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO call_transcript (call_id, transcript_text, created_at)
+                    VALUES (%s, %s, NOW())
+                    """,
+                    (call_id, transcript_data.text),
+                )
+                cursor.execute("RELEASE SAVEPOINT transcript_insert")
+                logger.info(f"Inserted transcript for call_id: {call_id}")
+            except Exception as transcript_error:
+                cursor.execute("ROLLBACK TO SAVEPOINT transcript_insert")
+                logger.warning(f"Could not insert transcript: {transcript_error}")
+
+            # Insert call payload
+            cursor.execute("SAVEPOINT payload_insert")
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO call_payload (call_id, payload, created_at)
+                    VALUES (%s, %s, NOW())
+                    """,
+                    (call_id, json.dumps(gemini_response)),
+                )
+                cursor.execute("RELEASE SAVEPOINT payload_insert")
+                logger.info(f"Inserted payload for call_id: {call_id}")
+            except Exception as payload_error:
+                cursor.execute("ROLLBACK TO SAVEPOINT payload_insert")
+                logger.warning(f"Could not insert payload: {payload_error}")
+
+            # Process facts and update user profile in SAME TRANSACTION
+            if facts:
+                # Insert facts into database
+                for fact_key, fact_value, fact_path, observed_at in facts:
+                    # Convert fact_value to proper JSON format
+                    if isinstance(fact_value, str):
+                        json_value = json.dumps(fact_value)
+                    else:
+                        json_value = json.dumps(fact_value)
+
+                    # Insert into user_fact_events with call_id
+                    cursor.execute(
+                        """
+                        INSERT INTO user_fact_events (user_id, call_id, fact_key, fact_value, observed_at)
+                        VALUES (%s, %s, %s, %s, NOW())
+                        """,
+                        (user_id, call_id, fact_key, json_value),
+                    )
+
+                    # Update user_profile_current
+                    cursor.execute(
+                        """
+                        INSERT INTO user_profile_current (user_id, fact_key, fact_value, last_observed_at)
+                        VALUES (%s, %s, %s, NOW())
+                        ON CONFLICT (user_id, fact_key) 
+                        DO UPDATE SET 
+                            fact_value = EXCLUDED.fact_value,
+                            last_observed_at = NOW()
+                        """,
+                        (user_id, fact_key, json_value),
+                    )
+
+                logger.info(
+                    f"Successfully inserted {len(facts)} facts into database for user {user_id} (call_id: {call_id})"
+                )
+
+            # Commit everything in one transaction
+            conn.commit()
+            logger.info(
+                f"Successfully created call records and facts for call_id: {call_id}"
+            )
+
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error in database operations: {e}")
+            raise e
+        finally:
+            cursor.close()
+            conn.close()
+
+        # Step 5: Update user profile (run in background for better performance)
+        background_tasks.add_task(refresh_user_profile, user_id)
+        background_tasks.add_task(sync_user_table_data, user_id)
+
+        processing_time = (datetime.now() - start_time).total_seconds()
+
+        logger.info(
+            f"Text processed successfully: {len(facts)} facts extracted for user {user_id}"
+        )
+
+        return ProcessingResponse(
+            success=True,
+            message="Text processed successfully",
+            user_id=user_id,
+            call_id=call_id,
+            facts_extracted=len(facts),
+            processing_time=processing_time,
+        )
+
+    except Exception as e:
+        logger.error(f"Text processing failed: {e}")
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
