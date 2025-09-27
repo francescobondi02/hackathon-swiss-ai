@@ -1,0 +1,101 @@
+{
+  "conversation_metadata": {
+    "conversation_id": "<unique_id_or_filename>",
+    "language": "<detected_language>",
+    "date": "<date>",
+    "duration": "<hh:mm:ss>",
+    "participants": {
+      "advisor": "<advisor_name_or_placeholder>",
+      "client": "<client_name_or_placeholder>"
+    }
+  },
+  "authentication": {
+    "identity_verification": {
+      "date_of_birth": "<dob_placeholder>",
+      "address": "<address_placeholder>",
+      "other_details": "<id_card_or_employment_info>"
+    }
+  },
+  "interaction_context": {
+    "contact_preferences": {
+      "preferred_channel": "<email/phone/postal>",
+      "email": "<email_placeholder>",
+      "phone_number": "<phone_placeholder>"
+    },
+    "meeting_arrangements": {
+      "next_meeting": [
+        {
+          "date": "<meeting_date/available_dates>",
+          "time": "<meeting_time/available_hours>",
+          "type": "<video/branch/phone>",
+          "purpose": "<meeting_purpose>"
+        }
+      ],
+      "follow_up_required": "<yes/no>"
+    }
+  },
+  "client_requests": [
+    {
+      "topic": "<digital_banking/card/kyc/loan/etc.>",
+      "description": "<client_specific_request_or_issue>",
+      "urgency": "<low/medium/high>",
+      "documents_provided": ["<doc_links_or_names>"],
+      "documents_requested": ["<doc_types_needed>"]
+    }
+  ],
+  "advisor_responses": [
+    {
+      "assurance_or_explanation": "<security_explanation/system_issue/etc.>",
+      "proposed_solution": "<temporary_card_limit_increase/support_ticket/etc.>",
+      "timeline": "<expected_resolution_time>"
+    }
+  ],
+  "action_items": [
+    {
+      "responsible_party": "<advisor/client/bank_system>",
+      "task": "<update_contact_info/open_ticket/schedule_meeting/etc.>",
+      "deadline": "<date_or_timeframe>",
+      "status": "<pending/completed>"
+    }
+  ],
+  "financial_information": {
+    "accounts": {
+      "balances": "<placeholder_if_provided>",
+      "overdraft_limit": "<placeholder>",
+      "credit_card_limit": "<placeholder>",
+      "recent_transactions": ["<transaction_details_if_discussed>"]
+    },
+    "assets": {
+      "real_estate": "<amount_placeholder>",
+      "liquid_assets": "<amount_placeholder>",
+      "other_assets": "<amount_placeholder>",
+      "inheritance": "<yes/no_amount_doc>"
+    },
+    "investment_preferences": {
+      "risk_profile": "<conservative/moderate/aggressive>",
+      "products_discussed": ["<funds/3a/retirement/structured_products>"],
+      "goals": ["<retirement/liquidity_event/tax_optimization>"]
+    }
+  },
+  "client_sentiment": {
+    "expressed_emotions": ["<relieved/concerned/skeptical/appreciative>"],
+    "confidence_level": "<low/medium/high>",
+    "trust_in_bank": "<increasing/decreasing/stable>"
+  },
+  "feedback_and_suggestions": {
+    "client_feedback": "<positive/negative/neutral>",
+    "suggestions_for_services": ["<new_features/app_updates/etc.>"]
+  },
+  "compliance_and_regulatory": {
+    "kyc_updates": {
+      "employment_status": "<job_role_company_sector>",
+      "source_of_funds": "<salary/inheritance/etc.>",
+      "total_assets_reported": "<amount>",
+      "purpose_of_relationship": "<investment/trading/etc.>"
+    },
+    "security_concerns": {
+      "fraud_suspicions": "<yes/no>",
+      "measures_discussed": ["<2fa/alerts/card_block/etc.>"]
+    }
+  }
+}

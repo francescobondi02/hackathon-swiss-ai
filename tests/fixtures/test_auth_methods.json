@@ -1,0 +1,55 @@
+{
+  "conversation_metadata": {
+    "conversation_id": "test_auth_methods",
+    "language": "it-CH",
+    "date": "2025-09-26",
+    "duration": "00:15:30",
+    "participants": {
+      "advisor": "Sarah Weber",
+      "client": "Marco Rossi"
+    }
+  },
+  "authentication": {
+    "identity_verification": {
+      "date_of_birth": "1985-03-15",
+      "address": "Via Monte Brè 12, 6900 Lugano",
+      "other_details": "ID card verified"
+    }
+  },
+  "interaction_context": {
+    "contact_preferences": {
+      "preferred_channel": "phone",
+      "phone_number": "+41 91 234 56 78"
+    },
+    "meeting_arrangements": {
+      "next_meeting": [
+        {
+          "date": "2025-10-15",
+          "time": "10:00",
+          "type": "branch",
+          "purpose": "Investment consultation"
+        }
+      ],
+      "follow_up_required": "yes"
+    }
+  },
+  "financial_information": {
+    "investment_preferences": {
+      "risk_profile": "moderate",
+      "products_discussed": ["retirement planning"],
+      "goals": ["long-term savings"]
+    }
+  },
+  "client_sentiment": {
+    "expressed_emotions": ["interested"],
+    "confidence_level": "high",
+    "trust_in_bank": "stable"
+  },
+  "compliance_and_regulatory": {
+    "kyc_updates": {
+      "employment_status": "Software Engineer",
+      "source_of_funds": "salary",
+      "purpose_of_relationship": "investment"
+    }
+  }
+}
